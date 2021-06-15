@@ -1,0 +1,2 @@
+# gestore
+Django object management
