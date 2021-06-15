@@ -1,0 +1,27 @@
+{% extends "base_generic.html" %}
+
+{% block content %}
+
+  <h1>Languages List</h1>
+
+  <a class="btn btn-primary" role="button" href="{% url 'language-create' %}">
+    Create Language
+  </a>
+
+  {% if language_list %}
+    <ul>
+
+      {% for language in language_list %}
+        <li>
+          <a href="{{ language.get_absolute_url }}">{{ language.name }}</a>
+        </li>
+      {% endfor %}
+
+    </ul>
+  {% else %}
+    <p>There are no languages available.</p>
+  {% endif %}
+
+
+
+{% endblock %}

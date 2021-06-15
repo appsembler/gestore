@@ -1,10 +1,9 @@
 import json
 import os
-import pkg_resources
 
 from django.conf import settings
+from django.core.management import CommandError
 from django.core.serializers.python import Deserializer
-from django.core.management.base import BaseCommand, CommandError
 from django.core.management.color import no_style
 from django.db import (
     connections,
@@ -15,21 +14,19 @@ from django.db import (
     transaction,
 )
 
+from gestore.gestore_command import GestoreCommand
+from gestore.utils import get_pip_packages, get_str_from_model, has_conflict
 
-class Command(BaseCommand):
+
+class Command(GestoreCommand):
     """
     Imports Tahoe site objects from an export file.
     """
-    # Increase this version by 1 after every backward-incompatible
-    # change in the exported data format
-    VERSION = 1
-
     def __init__(self, *args, **kwargs):
         self.export_object_count = 0
         self.loaded_object_count = 0
-        self.debug = False
+        self.to_save_objects = []
         self.using = DEFAULT_DB_ALIAS
-        self.version = self.VERSION
         self.ignore = False
         self.override = False
 
@@ -38,33 +35,32 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument(
             'path',
-            help='The path of the exports file.',
+            help='The path of the exports file',
             type=str,
         )
         parser.add_argument(
             '-d', '--debug',
             action='store_true',
-            default=settings.DEBUG,
-            help='Execute in debug mode (Will not commit or save changes).'
+            help='Execute in debug mode (Will not commit or save changes)'
         )
         parser.add_argument(
             '-o', '--override',
             action='store_true',
             default=False,
             help='Override conflicts in DB. This is very dangerous, please '
-                 'use with care.'
+                 'use with care'
         )
         parser.add_argument(
             '--database', default=DEFAULT_DB_ALIAS,
             help='Nominates a specific database to load export data into. '
-                 'Defaults to the "default" database.',
+                 'Defaults to the "default" database',
         )
         parser.add_argument(
             '--ignorenonexistent', '-i',
             action='store_true',
             dest='ignore',
             help='Ignores entries in the serialized data for fields that do '
-                 'not currently exist on the model.',
+                 'not currently exist on the model',
         )
 
     def handle(self, *args, **options):
@@ -79,9 +75,9 @@ class Command(BaseCommand):
         path = options['path']
 
         exports = self.load_exports_file(path)
-        self.check_project(exports)
+        self.check(exports=exports, display_num_errors=True)
 
-        self._write('Processing %s site objects...' % exports["site_domain"])
+        self.write('Processing exported objects...')
 
         # If load_data is successfully completed, the changes are committed to
         # the database. If there is an exception, the changes are rolled back.
@@ -95,8 +91,8 @@ class Command(BaseCommand):
         if transaction.get_autocommit(self.using):
             connections[self.using].close()
 
-        self._success(
-            'Successfully imported "%s" site objects.' % exports['site_domain']
+        self.write_success(
+            'Successfully imported "%s" objects.' % self.loaded_object_count
         )
 
     def load_exports_file(self, path: str) -> dict:
@@ -104,16 +100,16 @@ class Command(BaseCommand):
         Processes the input path, by fetching the file and returning the JSON
         representation of it.
         """
-        self._write('Fetching exports file content...')
+        self.write('Fetching exports file content...')
         if not os.path.exists(path):
-            raise CommandError('Exports file path does not exist: %s' % path)
+            self.raise_error('Exports file path does not exist: %s' % path)
 
         with open(path) as f:
             data = json.load(f)
 
         return data
 
-    def check_project(self, exports: dict) -> None:
+    def check(self, *args, **kwargs):
         """
         Inspects project for potential problems.
 
@@ -129,31 +125,37 @@ class Command(BaseCommand):
 
         If these don't check out, we might need to manually fix the problem.
         """
-        self._write('Inspecting project for potential problems...')
-        self.check(display_num_errors=True)
+        self.write('Inspecting project for potential problems...')
+        exports = kwargs.pop('exports', {})
 
-        if not exports.get('site_domain'):
-            raise CommandError('Malformed exports file.')
+        super(Command, self).check(*args, **kwargs)
+        self.check_migrations()
+
+        if not exports:
+            return
+
+        if not exports.get('provided_objects'):
+            self.raise_error('Malformed exports file.')
 
         if 'version' not in exports:
-            raise CommandError(
+            self.raise_error(
                 'Version is missing. '
                 'Please check the input file for missing data.'
             )
 
-        if exports['version'] != self.version:
-            self._warning(
+        if exports['version'] != str(self.version):
+            self.write_warning(
                 'Version mismatch between exported input and the importer.'
             )
 
-            self._info(
+            self.write_info(
                 'Objects will be created as long as no errors '
                 'happen on the way.'
             )
 
-        local_packages = self.get_pip_packages()
+        local_packages = get_pip_packages()
         if 'libraries' not in exports:
-            raise CommandError(
+            self.raise_error(
                 '`libraries` is missing. '
                 'Please check the input file for missing data.'
             )
@@ -161,11 +163,11 @@ class Command(BaseCommand):
 
         # exported_packages and local_packages are dictionaries
         if exported_packages != local_packages:
-            self._warning(
+            self.write_warning(
                 'Pip packages mismatch between exported input '
                 'and the importer.'
             )
-            self._info(
+            self.write_info(
                 'Objects will be created as long as no errors '
                 'happen on the way.'
             )
@@ -186,33 +188,22 @@ class Command(BaseCommand):
             for package, (local_version, exported_version) in packages.items():
                 if local_version != exported_version:
                     if not local_version:
-                        self._write(
+                        self.write(
                             '%s==%s not found in your local '
                             'env' % (package, exported_version)
                         )
                     elif not exported_version:
-                        self._write(
+                        self.write(
                             '%s==%s not found in your exported '
                             'env' % (package, local_version)
                         )
                     else:
-                        self._write(
+                        self.write(
                             '%s local version is %s and exported version is %s'
                             % (package, local_version, exported_version)
                         )
         else:
-            self._write('Turn debugging mode on to see packages differences')
-
-    @staticmethod
-    def get_pip_packages() -> dict:
-        """
-        Returns a dictionary of pip packages names and their versions. Similar
-        to `$ pip freeze`
-        """
-        return {
-            package.project_name: package.version
-            for package in pkg_resources.working_set
-        }
+            self.write('Turn debugging mode on to see packages differences')
 
     def load_data(self, objects_data: dict) -> None:
         """
@@ -225,9 +216,8 @@ class Command(BaseCommand):
         database and then run load_data again, we’ll wipe out any changes
         we’ve made.
         """
-        connection = connections[self.using]
-
         models = set()
+        connection = connections[self.using]
 
         with connection.constraint_checks_disabled():
             self.load_objects(objects_data)
@@ -254,10 +244,12 @@ class Command(BaseCommand):
                     for line in sequence_sql:
                         cursor.execute(line)
 
+        self.print_to_save_objects()
+
         if self.export_object_count == self.loaded_object_count:
-            self._write('Installed %d object(s)' % self.loaded_object_count)
+            self.write('Installed %d object(s)' % self.loaded_object_count)
         else:
-            self._write(
+            self.write(
                 'Installed %d object(s) (of %d)'
                 % (self.loaded_object_count, self.export_object_count)
             )
@@ -287,13 +279,18 @@ class Command(BaseCommand):
                     models.add(Model)
 
                     object_id = obj.object.pk
-                    if self.has_conflict(Model, object_id):
-                        mpath = '.'.join([Model.__module__, Model.__name__])
+                    if has_conflict(Model, object_id):
+                        mpath = get_str_from_model(Model)
                         conflicts.append((object_id, mpath))
 
                     try:
-                        obj.save(using=self.using)
-                        self._write(
+                        if self.debug:
+                            self.to_save_objects.append(
+                                get_str_from_model(Model, object_id=object_id)
+                            )
+                        else:
+                            obj.save(using=self.using)
+                        self.write(
                             '\rProcessed %i '
                             'object(s)' % self.loaded_object_count,
                             ending=''
@@ -331,11 +328,7 @@ class Command(BaseCommand):
 
         # Warn if the the export file we loaded contains 0 objects.
         if self.export_object_count == 0:
-            self._warning('No data found for provided export file')
-
-    @staticmethod
-    def has_conflict(Model, object_id):
-        return Model.objects.filter(id=object_id).exists()
+            self.write_warning('No data found for provided export file')
 
     def print_conflicts(self, conflicts):
         conflicts_message = ''.join([
@@ -343,48 +336,40 @@ class Command(BaseCommand):
             for c, m in conflicts
         ])
 
-        self._error(
+        self.write_error(
             '\nConflict detected in the following '
             'objects:\n %s' % conflicts_message
         )
 
     def raise_for_conflicts(self):
-        self._warning('PLEASE READ:')
-        self._warning('Conflict detected between database and export data...')
-        self._write(
+        self.write_warning('PLEASE READ:')
+        self.write_warning(
+            'Conflict detected between database and export data...'
+        )
+        self.write(
             'This error was raised to prevent overriding the object in your '
             'database.\n'
             'Solving this issue is typically \033[1mmanual\033[0m, here is '
             'some suggestions, but feel free to be creative.\n'
-            '\t* Make sure you are importing a site in a clean Tahoe '
-            'environment.\n'
+            '\t* Make sure you are importing a site in a clean environment.\n'
             '\t* Change the ID of the object in the imported file if the '
             'object in the database is completly different than the one being '
             'imported.\n'
-            '\t* Remove the site using \033[1m`remove_site`\033[0m command if '
-            'the site in the database is outdated.\n'
+            '\t* Remove the object from the database if it is outdated.\n'
             '\t* Use \033[1m--override\033[0m option if you are confident the '
             'imported data will not raise any issues in the future '
             '\033[3m(Could be dangerous)\033[0m.\n'
-            '\t* Contact Orange Team for support.\n'
+            '\t* Consult your Team for support.\n'
         )
 
-        raise CommandError(
+        self.raise_error(
             'Data conflict detected between objects in the database and the '
             'imported file'
         )
 
-    def _info(self, message):
-        self.stdout.write(self.style.HTTP_INFO(message))
+    def print_to_save_objects(self):
+        if not self.debug:
+            return
 
-    def _write(self, message, ending='\n'):
-        self.stdout.write(message, ending=ending)
-
-    def _success(self, message):
-        self.stdout.write(self.style.SUCCESS(message))
-
-    def _warning(self, message):
-        self.stdout.write(self.style.WARNING(message))
-
-    def _error(self, message):
-        self.stdout.write(self.style.ERROR(message))
+        for obj in self.to_save_objects:
+            self.write(obj)
