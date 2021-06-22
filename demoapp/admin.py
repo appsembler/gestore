@@ -1,20 +1,14 @@
 """
-These admin classes are copied from https://github.com/mdn/django-locallibrary-tutorial/blob/master/catalog/admin.py
+These admin classes are copied from
+https://github.com/mdn/django-locallibrary-tutorial/blob/master/catalog/admin.py
 """
 from django.contrib import admin
+from django.contrib.auth.admin import UserAdmin
+from django.contrib.auth.models import User
 
-from .models import Author, Genre, Book, BookInstance, Language
+from .models import Author, Genre, Book, BookInstance, Language, Profile
 
-"""Minimal registration of Models.
-admin.site.register(Book)
-admin.site.register(Author)
-admin.site.register(BookInstance)
-admin.site.register(Genre)
-admin.site.register(Language)
-"""
-
-admin.site.register(Genre)
-admin.site.register(Language)
+admin.site.unregister(User)
 
 
 class BooksInline(admin.TabularInline):
@@ -50,6 +44,7 @@ class BooksInstanceInline(admin.TabularInline):
     model = BookInstance
 
 
+@admin.register(Book)
 class BookAdmin(admin.ModelAdmin):
     """Administration object for Book models.
     Defines:
@@ -58,9 +53,6 @@ class BookAdmin(admin.ModelAdmin):
     """
     list_display = ('title', 'author', 'display_genre')
     inlines = [BooksInstanceInline]
-
-
-admin.site.register(Book, BookAdmin)
 
 
 @admin.register(BookInstance)
@@ -82,3 +74,24 @@ class BookInstanceAdmin(admin.ModelAdmin):
             'fields': ('status', 'due_back', 'borrower')
         }),
     )
+
+
+class ProfileInline(admin.StackedInline):
+    model = Profile
+    can_delete = False
+    verbose_name_plural = 'Profile'
+    fk_name = 'user'
+
+
+@admin.register(User)
+class CustomUserAdmin(UserAdmin):
+    inlines = (ProfileInline, )
+
+    def get_inline_instances(self, request, obj=None):
+        if not obj:
+            return list()
+        return super(CustomUserAdmin, self).get_inline_instances(request, obj)
+
+
+admin.site.register(Genre)
+admin.site.register(Language)

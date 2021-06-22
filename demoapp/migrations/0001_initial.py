@@ -5,6 +5,11 @@ from django.db import migrations, models
 import django.db.models.deletion
 import uuid
 
+if django.VERSION < (3, 1, 0):
+    RESTRICT = django.db.models.deletion.PROTECT
+else:
+    RESTRICT = django.db.models.deletion.RESTRICT
+
 
 class Migration(migrations.Migration):
 
@@ -62,7 +67,7 @@ class Migration(migrations.Migration):
                 ('imprint', models.CharField(max_length=200)),
                 ('due_back', models.DateField(blank=True, null=True)),
                 ('status', models.CharField(blank=True, choices=[('d', 'Maintenance'), ('o', 'On loan'), ('a', 'Available'), ('r', 'Reserved')], default='d', help_text='Book availability', max_length=1)),
-                ('book', models.ForeignKey(null=True, on_delete=django.db.models.deletion.RESTRICT, to='demoapp.book')),
+                ('book', models.ForeignKey(null=True, on_delete=RESTRICT, to='demoapp.book')),
                 ('borrower', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to=settings.AUTH_USER_MODEL)),
             ],
             options={

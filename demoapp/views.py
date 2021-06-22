@@ -1,5 +1,6 @@
 """
-These views are copied from https://github.com/mdn/django-locallibrary-tutorial/blob/master/catalog/views.py
+These views are copied from
+https://github.com/mdn/django-locallibrary-tutorial/blob/master/catalog/views.py
 """
 import datetime
 
@@ -53,7 +54,7 @@ class LoanedBooksAllListView(PermissionRequiredMixin, generic.ListView):
     with can_mark_returned permission.
     """
     model = BookInstance
-    permission_required = 'catalog.can_mark_returned'
+    permission_required = 'demoapp.can_mark_returned'
     template_name = 'demoapp/bookinstance_list_borrowed_all.html'
     paginate_by = 100
 
@@ -99,7 +100,7 @@ class LoanedBooksByUserListView(LoginRequiredMixin, generic.ListView):
 
 
 @login_required
-@permission_required('catalog.can_mark_returned', raise_exception=True)
+@permission_required('demoapp.can_mark_returned', raise_exception=True)
 def renew_book_librarian(request, pk):
     """View function for renewing a specific BookInstance by librarian."""
     book_instance = get_object_or_404(BookInstance, pk=pk)
@@ -135,12 +136,12 @@ class AuthorCreate(PermissionRequiredMixin, CreateView):
     model = Author
     fields = ['first_name', 'last_name', 'date_of_birth', 'date_of_death']
     initial = {'date_of_death': '11/06/2020'}
-    permission_required = 'catalog.can_mark_returned'
+    permission_required = 'demoapp.can_mark_returned'
 
 
 class AuthorUpdate(PermissionRequiredMixin, UpdateView):
     model = Author
-    permission_required = 'catalog.can_mark_returned'
+    permission_required = 'demoapp.can_mark_returned'
     # Not recommended (potential security issue if more fields added)
     fields = '__all__'
 
@@ -148,25 +149,25 @@ class AuthorUpdate(PermissionRequiredMixin, UpdateView):
 class AuthorDelete(PermissionRequiredMixin, DeleteView):
     model = Author
     success_url = reverse_lazy('authors')
-    permission_required = 'catalog.can_mark_returned'
+    permission_required = 'demoapp.can_mark_returned'
 
 
 class BookCreate(PermissionRequiredMixin, CreateView):
     model = Book
     fields = ['title', 'author', 'summary', 'isbn', 'genre', 'language']
-    permission_required = 'catalog.can_mark_returned'
+    permission_required = 'demoapp.can_mark_returned'
 
 
 class BookUpdate(PermissionRequiredMixin, UpdateView):
     model = Book
     fields = ['title', 'author', 'summary', 'isbn', 'genre', 'language']
-    permission_required = 'catalog.can_mark_returned'
+    permission_required = 'demoapp.can_mark_returned'
 
 
 class BookDelete(PermissionRequiredMixin, DeleteView):
     model = Book
     success_url = reverse_lazy('books')
-    permission_required = 'catalog.can_mark_returned'
+    permission_required = 'demoapp.can_mark_returned'
 
 
 class GenresListView(generic.ListView):
@@ -179,7 +180,7 @@ class GenreCreate(PermissionRequiredMixin, CreateView):
     model = Genre
     fields = ['name']
     initial = {'date_of_death': '11/06/2020'}
-    permission_required = 'catalog.can_mark_returned'
+    permission_required = 'demoapp.can_mark_returned'
 
 
 class GenreView(generic.DetailView):
@@ -197,7 +198,7 @@ class LanguageCreate(PermissionRequiredMixin, CreateView):
     model = Language
     fields = ['name']
     initial = {'date_of_death': '11/06/2020'}
-    permission_required = 'catalog.can_mark_returned'
+    permission_required = 'demoapp.can_mark_returned'
 
 
 class LanguageView(generic.DetailView):

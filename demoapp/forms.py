@@ -1,5 +1,6 @@
 """
-These forms are copied from https://github.com/mdn/django-locallibrary-tutorial/blob/master/catalog/forms.py
+These forms are copied from
+https://github.com/mdn/django-locallibrary-tutorial/blob/master/catalog/forms.py
 """
 from django.core.exceptions import ValidationError
 from django.utils.translation import ugettext_lazy as _

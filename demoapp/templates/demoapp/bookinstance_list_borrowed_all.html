@@ -11,7 +11,7 @@
           <a href="{% url 'book-detail' bookinst.book.pk %}">{{ bookinst.book.title }}</a>
           ({{ bookinst.due_back }}) {% if user.is_staff %}-
           {{ bookinst.borrower }}{% endif %}
-          {% if perms.catalog.can_mark_returned %}-
+          {% if perms.demoapp.can_mark_returned %}-
             <a href="{% url 'renew-book-librarian' bookinst.id %}">Renew</a>  {% endif %}
         </li>
       {% endfor %}
