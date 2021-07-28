@@ -1,7 +1,6 @@
-import json
-import os
 from typing import List, Tuple
 
+from django.conf import settings
 from django.core.management import CommandError
 from django.core.serializers.python import Deserializer
 from django.core.management.color import no_style
@@ -75,9 +74,18 @@ class Command(GestoreCommand):
         self.ignore = options['ignore']
         self.using = options['database']
         self.override = options['override']
+        self.use_bucket = options['bucket']
 
         path = options['path']
 
+        if not settings.DEBUG and self.override:
+            self.raise_error(
+                'You cannot use --override in a production environment.\n'
+                'If you are facing any issues importing your objects, please '
+                'fix them manually or consult your team for support.'
+            )
+
+        super(Command, self).check()
         exports = self.load_exports_file(path)
         self.check(exports=exports, display_num_errors=True)
 
@@ -99,20 +107,6 @@ class Command(GestoreCommand):
             'Successfully imported "%s" objects.' % self.loaded_object_count
         )
 
-    def load_exports_file(self, path: str) -> dict:
-        """
-        Processes the input path, by fetching the file and returning the JSON
-        representation of it.
-        """
-        self.write('Fetching exports file content...')
-        if not os.path.exists(path):
-            self.raise_error('Exports file path does not exist: %s' % path)
-
-        with open(path) as f:
-            data = json.load(f)
-
-        return data
-
     def check(self, *args, **kwargs):
         """
         Inspects project for potential problems.
@@ -132,7 +126,6 @@ class Command(GestoreCommand):
         self.write('Inspecting project for potential problems...')
         exports = kwargs.pop('exports', {})
 
-        super(Command, self).check(*args, **kwargs)
         self.check_migrations()
 
         if not exports:

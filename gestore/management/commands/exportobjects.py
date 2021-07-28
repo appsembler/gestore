@@ -1,7 +1,6 @@
 from datetime import datetime
 
 import json
-import os
 from typing import List
 
 from django.contrib.contenttypes.models import ContentType
@@ -29,7 +28,7 @@ class Command(GestoreCommand):
         parser.add_argument(
             '-o', '--output',
             help='The location you want to direct your output to',
-            default='%s/exports' % os.getcwd(),
+            default=self.exports_dir,
             type=str,
         )
 
@@ -38,7 +37,7 @@ class Command(GestoreCommand):
         Verifies the input and packs the objects.
         """
         self.debug = options['debug']
-
+        self.use_bucket = options['bucket']
         self.write('Inspecting project for potential problems...')
         self.check(objects=options['objects'], display_num_errors=True)
 
@@ -72,7 +71,7 @@ class Command(GestoreCommand):
         )
 
         path = self.generate_file_path(options['output'])
-        self.write_to_file(path, output)
+        self.write_exports_file(path, output)
 
         self.write_success('Objects successfully exported!')
 
@@ -210,7 +209,7 @@ class Command(GestoreCommand):
         self.check_migrations()
         self.check_objects(objects)
 
-        super(Command, self).check()
+        super(Command, self).check(*args, **kwargs)
 
     def check_objects(self, objects: str) -> None:
         for obj in objects:

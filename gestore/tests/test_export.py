@@ -20,17 +20,17 @@ class TestExportObjectsCommand(TestCase):
 
     @patch('gestore.management.commands.exportobjects.get_pip_packages')
     @patch('gestore.management.commands.exportobjects.get_obj_from_str')
-    @patch.object(Command, 'write_to_file')
+    @patch.object(Command, 'write_exports_file')
     @patch.object(Command, 'check')
     def test_handle(
             self,
             mock_check,
-            mock_write_to_file,
+            mock_write_exports_file,
             get_obj_from_str,
             mock_get_pip_packages
     ):
         get_obj_from_str.return_value = self.books_instances[0]
-        mock_write_to_file.return_value = 'called'
+        mock_write_exports_file.return_value = 'called'
         mock_get_pip_packages.return_value = {}
 
         objs = ['demoapp.book.1', 'demoapp.book.2', ]
@@ -38,7 +38,7 @@ class TestExportObjectsCommand(TestCase):
 
         self.assertTrue(mock_check.called)
         self.assertTrue(get_obj_from_str.called)
-        self.assertTrue(mock_write_to_file.called)
+        self.assertTrue(mock_write_exports_file.called)
         self.assertTrue(mock_get_pip_packages.called)
 
         if django.VERSION < (3, 2, 0):

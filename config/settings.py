@@ -126,3 +126,12 @@ STATIC_URL = '/static/'
 # https://docs.djangoproject.com/en/3.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+
+# Bucket upload settings
+GESTORE_BUCKET_NAME = os.environ.get('GESTORE_BUCKET_NAME')
+GESTORE_PROJECT_NAME = os.environ.get('GESTORE_PROJECT_NAME')
+GESTORE_CREDENTIALS = os.environ.get(
+    "GESTORE_CREDENTIALS",
+    os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
+)

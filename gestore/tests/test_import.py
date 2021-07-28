@@ -1,9 +1,9 @@
-import json
 from io import StringIO
-from unittest.mock import MagicMock, mock_open, patch
+from unittest.mock import MagicMock, patch
 
 from django.core.management import CommandError, call_command
-from django.test import TestCase
+from django.test import TestCase, override_settings
+from gestore.gestore_command import GestoreCommand
 
 from gestore.management.commands.importobjects import Command
 
@@ -14,6 +14,16 @@ class TestImportObjectsCommand(TestCase):
         self.command = Command(stdout=self.out)
 
         self.exports = {'objects': []}
+
+    @override_settings(DEBUG=False)
+    def test_override_flag_not_debug(self):
+        # Command should fail in case override is requested in a non debug env.
+        message = 'You cannot use --override in a production environment.'
+        with self.assertRaisesMessage(CommandError, message):
+            call_command(
+                'importobjects', '/dummy/path.json',
+                override=True, stdout=self.out
+            )
 
     @patch.object(Command, 'load_exports_file')
     @patch.object(Command, 'check')
@@ -28,20 +38,6 @@ class TestImportObjectsCommand(TestCase):
 
         # Check check called with the output of load_exports_file
         self.assertTrue(mock_check.called_with(self.exports))
-
-    def test_load_exports_file(self):
-        path = '/dummy/path.json'
-        content = '{"tetst": "contetnt"}'
-
-        # File doesn't exist
-        with self.assertRaises(CommandError):
-            self.command.load_exports_file(path)
-
-        with patch('os.path.exists', return_value=True):
-            with patch('builtins.open', mock_open(read_data=content)):
-                data = self.command.load_exports_file(path)
-
-        self.assertEqual(data, json.loads(content))
 
     @patch('django.db.backends.sqlite3.base.DatabaseWrapper.check_constraints')
     @patch('django.db.backends.base.base.BaseDatabaseWrapper'
@@ -66,12 +62,21 @@ class TestImportObjectsCommand(TestCase):
             self.command.load_data({})
 
     @patch.object(Command, 'load_exports_file', return_value={'objects': []})
+    @patch.object(GestoreCommand, 'check', return_value=None)
     @patch.object(Command, 'check', return_value=None)
     @patch.object(Command, 'load_data', return_value=None)
-    def test_handle(self, mock_load_data, mock_check, mock_load_exports_file):
+    def test_handle(
+            self,
+            mock_load_data,
+            mock_check,
+            mock_gestore_check,
+            mock_load_exports_file
+    ):
         with patch('django.db.transaction.atomic') as m:
             call_command('importobjects', '/dummy/path.json', stdout=self.out)
             self.assertTrue(m.called)
+
+        mock_gestore_check.assert_called_once_with()
 
     @patch('django.db.utils.ConnectionRouter.allow_migrate_model')
     def test_load_objects(self, mock_allow_migrate_model):

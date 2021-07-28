@@ -115,9 +115,10 @@ python manage.py exportobjects auth.User.10 demoapp.Book.4 -o /path/to/exp.json
 
 #### Command Arguments
 
-- `objects`. The main argument of the `exportobjects`. Its representation is described above.
+- `objects` The main argument of the `exportobjects`. Its representation is described above.
 - `--debug` flag is optional. Use it to prevent any file writing. It is helpful to see the JSON output of the data before writing it on your system.
 - `--output` is an optional argument that takes a path string of the location in which you want to store the data exports file.
+- `--bucket` If provided, we will export the objects a GCP bucket in the path provided above (or the auto generated one). This needs settings configurations.
   
 
 ### Import functionality
@@ -141,7 +142,7 @@ python manage.py importobjects /path/to/exp.json
 - `path`. The main argument of the `importobjects`. It should point to an export file on your local system.
 - `--debug` performs a dry run. Will not commit or save any changes to the DB.
 - `--override` DANGEROUS. In case of a conflict, this will override objects in the DB with the ones being imported.
-
+- `--bucket` If provided, we will import the objects from the given path in a GCP bucket. This needs settings configurations.
 
 #### Main issues here
 Let's say I have two objects with the same ID. Both of these objects might have the same schema or might be completely different. How can we perform a safe import without sacrificing the current data and without duplicating all objects?
@@ -183,7 +184,7 @@ Until we feel this is production-ready, we will continue only to push releases t
 - **Object conflicts** 
   - Some data like _usernames_ are unique cluster-wide; if we're importing such data from another cluster, some could be duplicated or overridden.
   - Some exported objects might have a similar ID to a different object in the database. This tool will flag these objects for you so you know what to change and what to override.
-
+- **Using Buckets**: At the moment, we are only supporting GCP Cloud Storage, not only that, but we are using `gsutil` to perform this operation for us. I know this sounds stupid, but it was our only way to do so since `google-cloud-storage` doesn't have support for Python 3.5, which is something we have to support at the moment.
 ## Reporting Security Issues
 Please do not report security issues in public. Please email us 
 on security@appsembler.com.

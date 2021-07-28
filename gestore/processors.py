@@ -38,8 +38,8 @@ def process_one_to_many_relation(
     missing any data used in some apps, and to protect the organization
     integrity.
 
-    Unlike ForeignKey, we just need too return the instances pointing at
-    this object so we can process them later.
+    Unlike ForeignKey, we just need to return the instances pointing at
+    this object so we can process it later.
     """
     manager = getattr(instance, field.get_accessor_name())
     to_process = [obj for obj in manager.all()] if manager else []
