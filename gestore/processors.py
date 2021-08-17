@@ -1,20 +1,11 @@
-from typing import Any, List, Optional, Tuple, Union
-
 from django.core.exceptions import ObjectDoesNotExist
-from django.db.models import (
-    ForeignKey,
-    ManyToManyField,
-    ManyToManyRel,
-    ManyToOneRel,
-    Model,
-    OneToOneField,
-)
+from django.db.models import ManyToManyRel
 
 
 def process_foreign_key(
-        instance: Model,
-        field: ForeignKey
-) -> Tuple[Any, Model]:
+        instance,
+        field
+):
     """
     What we are looking to achieve here is to get the ID of the object this
     instance is pointing at, and to return that instance for later processing.
@@ -28,9 +19,9 @@ def process_foreign_key(
 
 
 def process_one_to_many_relation(
-        instance: Model,
-        field: ManyToOneRel
-) -> List[Model]:
+        instance,
+        field
+):
     """
     In OneToManyRelations, it is this model that other objects are
     pointing at.
@@ -48,9 +39,9 @@ def process_one_to_many_relation(
 
 
 def process_one_to_one_relation(
-        instance: Model,
-        field: OneToOneField
-) -> Optional[List[Model]]:
+        instance,
+        field
+):
     """
     This is a little bit similar to the OneToManyRel, except that we
     attribute returns one instance when called instead of a Model Manager.
@@ -66,9 +57,9 @@ def process_one_to_one_relation(
 
 
 def process_many_to_many_relation(
-        instance: Model,
-        field: Union[ManyToManyRel, ManyToManyField]
-) -> Tuple[Any, List[Model]]:
+        instance,
+        field
+):
     """
     Extracts all objects this instance is pointing at for later processing.
     Also returns a list of these objects IDs to be used as a value under

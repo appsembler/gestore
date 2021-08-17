@@ -1,10 +1,8 @@
 from datetime import datetime
-
 import json
-from typing import List
 
 from django.contrib.contenttypes.models import ContentType
-from django.db.models import ForeignKey, Model
+from django.db.models import ForeignKey
 
 from gestore import processors
 from gestore.encoders import GestoreEncoder
@@ -16,7 +14,7 @@ class Command(GestoreCommand):
     """
     Export objects in a format that can be imported later.
     """
-    def add_arguments(self, parser) -> None:
+    def add_arguments(self, parser):
         # Add common args
         super(Command, self).add_arguments(parser)
 
@@ -32,7 +30,7 @@ class Command(GestoreCommand):
             type=str,
         )
 
-    def handle(self, *args, **options) -> None:
+    def handle(self, *args, **options):
         """
         Verifies the input and packs the objects.
         """
@@ -75,7 +73,7 @@ class Command(GestoreCommand):
 
         self.write_success('Objects successfully exported!')
 
-    def generate_objects(self, *args: List[Model]) -> list:
+    def generate_objects(self, *args):
         """
         A Breadth First Search implementation to extract the given objects and
         process their children.
@@ -124,7 +122,7 @@ class Command(GestoreCommand):
 
         return objects
 
-    def process_instance(self, instance: Model):
+    def process_instance(self, instance):
         """
         Inspired from: django.forms.models.model_to_dict
         Return a dict containing the data in ``instance`` suitable for passing
@@ -203,7 +201,7 @@ class Command(GestoreCommand):
 
         return data, to_process
 
-    def check(self, *args, **kwargs) -> None:
+    def check(self, *args, **kwargs):
         objects = kwargs.pop('objects', [])
 
         self.check_migrations()
@@ -211,7 +209,7 @@ class Command(GestoreCommand):
 
         super(Command, self).check(*args, **kwargs)
 
-    def check_objects(self, objects: str) -> None:
+    def check_objects(self, objects):
         for obj in objects:
             try:
                 _, _, _ = obj.split('.')

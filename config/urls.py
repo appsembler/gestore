@@ -16,16 +16,16 @@ Including another URLconf
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
-from django.urls import path, include
+from django.conf.urls import url, include
 from django.views.generic import RedirectView
 
 
 urlpatterns = [
-    path('', RedirectView.as_view(url='/catalog/')),
-    path('accounts/', include('django.contrib.auth.urls')),
-    path('catalog/', include('demoapp.urls')),
+    url(r'^/', RedirectView.as_view(url='/catalog/')),
+    url(r'^accounts/', include('django.contrib.auth.urls')),
+    url(r'^catalog/', include('demoapp.urls')),
 
-    path('admin/', admin.site.urls),
+    url(r'^admin/', admin.site.urls),
 ]
 
 if settings.DEBUG:

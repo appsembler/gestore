@@ -1,0 +1,4 @@
+-r base.txt
+
+Django==1.11.29
+future==0.18.2

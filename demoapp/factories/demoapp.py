@@ -1,7 +1,7 @@
 import factory.fuzzy
 
-from demoapp.factories.django import UserFactory
-from demoapp.models import BookInstance
+from .django import UserFactory
+from ..models import BookInstance
 
 
 class AuthorFactory(factory.django.DjangoModelFactory):
@@ -80,7 +80,7 @@ class GenreFactory(factory.django.DjangoModelFactory):
 
 
 class LanguageFactory(factory.django.DjangoModelFactory):
-    name = factory.Faker('language_name')
+    name = factory.Faker('first_name')
 
     class Meta:
         model = 'demoapp.Language'

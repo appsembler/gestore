@@ -1,12 +1,10 @@
-from typing import Any, Callable, Dict
-
+from __future__ import print_function
 import pkg_resources
 
 from django.apps import apps
-from django.db.models import Model
 
 
-def get_pip_packages() -> Dict[str, str]:
+def get_pip_packages():
     """
     Returns a dictionary of pip packages names and their versions. Similar
     to `$ pip freeze`
@@ -18,10 +16,10 @@ def get_pip_packages() -> Dict[str, str]:
 
 
 def write_packages_diff(
-        local_packages: Dict[str, str],
-        exported_packages: Dict[str, str],
-        writer: Callable = print
-) -> None:
+        local_packages,
+        exported_packages,
+        writer=print
+):
     """
     Checks the difference between two different packages dictionaries.
     """
@@ -49,17 +47,17 @@ def write_packages_diff(
                 )
 
 
-def has_conflict(model: Model, object_id: Any) -> bool:
+def has_conflict(model, object_id):
     return model.objects.filter(id=object_id).exists()
 
 
-def get_obj_from_str(object_rep: str) -> Model:
+def get_obj_from_str(object_rep):
     app_label, model_name, obj_id = object_rep.split('.')
     Model = apps.get_model(app_label, model_name)
     return Model.objects.get(id=obj_id)
 
 
-def get_str_from_model(model: Model, object_id=None) -> str:
+def get_str_from_model(model, object_id=None):
     model_path = '.'.join([model._meta.app_label, model.__name__])
 
     if object_id:

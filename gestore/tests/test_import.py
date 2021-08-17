@@ -1,5 +1,5 @@
-from io import StringIO
-from unittest.mock import MagicMock, patch
+from io import BytesIO as StringIO
+from mock import MagicMock, patch
 
 from django.core.management import CommandError, call_command
 from django.test import TestCase, override_settings
@@ -90,7 +90,7 @@ class TestImportObjectsCommand(TestCase):
 
 
 class TestImportObjectsCheck(TestCase):
-    def setUp(self) -> None:
+    def setUp(self):
         self.out = StringIO()
 
     @patch('gestore.management.commands.importobjects.get_pip_packages')

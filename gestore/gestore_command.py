@@ -4,16 +4,14 @@ import shlex
 import socket
 import subprocess
 import time
-from abc import ABC
 
 from django.core.management.base import BaseCommand, CommandError
 from django.conf import settings
 
 from gestore import __version__ as VERSION
-from gestore.typing import IP_ADDRESS
 
 
-class GestoreCommand(BaseCommand, ABC):
+class GestoreCommand(BaseCommand):
     """
     Parent management command for Gestore.
     """
@@ -28,7 +26,7 @@ class GestoreCommand(BaseCommand, ABC):
 
         super(GestoreCommand, self).__init__(*args, **kwargs)
 
-    def add_arguments(self, parser) -> None:
+    def add_arguments(self, parser):
         parser.add_argument(
             '-d', '--debug',
             action='store_true',
@@ -40,7 +38,7 @@ class GestoreCommand(BaseCommand, ABC):
             action='store_true',
         )
 
-    def generate_file_path(self, path: str) -> str:
+    def generate_file_path(self, path):
         """
         Determines and returns the output file name.
         If the user specified a full path, then just return it. If a partial
@@ -77,7 +75,7 @@ class GestoreCommand(BaseCommand, ABC):
                 '\t* GESTORE_PROJECT_NAME\n'
             )
 
-    def write_to_console(self, content: str) -> None:
+    def write_to_console(self, content):
         """
         Writing export content to console.
         """
@@ -88,7 +86,7 @@ class GestoreCommand(BaseCommand, ABC):
         self.write('Command output >>>')
         self.write_migrate_label(content)
 
-    def _shell_run(self, command: str):
+    def _shell_run(self, command):
         args = shlex.split(command)
 
         try:
@@ -119,7 +117,7 @@ class GestoreCommand(BaseCommand, ABC):
         # redirect their output to stderr, so stdout is always empty.
         self.write(stderr.decode('utf-8'))
 
-    def _write_to_bucket(self, path: str, content: str) -> None:
+    def _write_to_bucket(self, path, content):
         """
         Writes content in the specified path.
         """
@@ -143,7 +141,7 @@ class GestoreCommand(BaseCommand, ABC):
             'Content saved in %s: %s' % (settings.GESTORE_BUCKET_NAME, path)
         )
 
-    def _write_to_file(self, path: str, content: str) -> None:
+    def _write_to_file(self, path, content):
         """
         Writes content in the specified path.
         """
@@ -156,7 +154,7 @@ class GestoreCommand(BaseCommand, ABC):
 
         self.write_migrate_heading('Content saved in %s' % path)
 
-    def _load_exports_file_from_local(self, path: str) -> dict:
+    def _load_exports_file_from_local(self, path):
         """
         Processes the input path, by fetching the file and returning the JSON
         representation of it.
@@ -171,7 +169,7 @@ class GestoreCommand(BaseCommand, ABC):
 
         return data
 
-    def _load_exports_file_from_bucket(self, path: str) -> dict:
+    def _load_exports_file_from_bucket(self, path):
         """
         Downloads the export file in a given location from a bucket.
         """
@@ -188,7 +186,7 @@ class GestoreCommand(BaseCommand, ABC):
         ))
         return self._load_exports_file_from_local(download_path)
 
-    def load_exports_file(self, path: str) -> dict:
+    def load_exports_file(self, path):
         """
         Reroute the call to either local fetch or bucket fetch, and returns
         the result back in a dict object.
@@ -197,7 +195,7 @@ class GestoreCommand(BaseCommand, ABC):
             if self.use_bucket \
             else self._load_exports_file_from_local(path)
 
-    def write_exports_file(self, path: str, content: str) -> dict:
+    def write_exports_file(self, path, content):
         """
         Reroute the call to either local write or bucket write.
         """
@@ -205,13 +203,13 @@ class GestoreCommand(BaseCommand, ABC):
             if self.use_bucket \
             else self._write_to_file(path, content)
 
-    def raise_error(self, message: str) -> None:
+    def raise_error(self, message):
         raise CommandError(message)
 
     def get_version(self):
         return VERSION
 
-    def _get_ip_address(self, hostname: str) -> IP_ADDRESS:
+    def _get_ip_address(self, hostname):
         try:
             return socket.gethostbyname(hostname)
         except socket.gaierror:
@@ -219,31 +217,31 @@ class GestoreCommand(BaseCommand, ABC):
 
         return '127.0.0.1'
 
-    def write(self, message: str, *args, **kwargs) -> None:
+    def write(self, message, *args, **kwargs):
         self.stdout.write(message, *args, **kwargs)
 
-    def write_info(self, message: str, *args, **kwargs) -> None:
+    def write_info(self, message, *args, **kwargs):
         self.write(self.style.HTTP_INFO(message), *args, **kwargs)
 
-    def write_success(self, message: str, *args, **kwargs) -> None:
+    def write_success(self, message, *args, **kwargs):
         self.write(self.style.SUCCESS(message), *args, **kwargs)
 
-    def write_warning(self, message: str, *args, **kwargs) -> None:
+    def write_warning(self, message, *args, **kwargs):
         self.write(self.style.WARNING(message), *args, **kwargs)
 
-    def write_sql_coltype(self, message: str, *args, **kwargs) -> None:
+    def write_sql_coltype(self, message, *args, **kwargs):
         self.write(self.style.SQL_COLTYPE(message), *args, **kwargs)
 
-    def write_migrate_heading(self, message: str, *args, **kwargs) -> None:
+    def write_migrate_heading(self, message, *args, **kwargs):
         self.write(self.style.MIGRATE_HEADING(message), *args, **kwargs)
 
-    def write_migrate_label(self, message: str, *args, **kwargs) -> None:
+    def write_migrate_label(self, message, *args, **kwargs):
         self.write(self.style.MIGRATE_LABEL(message), *args, **kwargs)
 
-    def write_sql_keyword(self, message: str, *args, **kwargs) -> None:
+    def write_sql_keyword(self, message, *args, **kwargs):
         self.write(self.style.SQL_KEYWORD(message), *args, **kwargs)
 
-    def write_error(self, message: str, *args, **kwargs) -> None:
+    def write_error(self, message, *args, **kwargs):
         self.write(self.style.ERROR(message), *args, **kwargs)
 
     def check(self, *args, **kwargs):

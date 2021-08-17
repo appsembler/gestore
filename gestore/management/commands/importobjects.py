@@ -1,5 +1,3 @@
-from typing import List, Tuple
-
 from django.conf import settings
 from django.core.management import CommandError
 from django.core.serializers.python import Deserializer
@@ -14,7 +12,6 @@ from django.db import (
 )
 
 from gestore.gestore_command import GestoreCommand
-from gestore.typing import PK
 from gestore.utils import (
     write_packages_diff,
     get_pip_packages,
@@ -37,7 +34,7 @@ class Command(GestoreCommand):
 
         super(Command, self).__init__(*args, **kwargs)
 
-    def add_arguments(self, parser) -> None:
+    def add_arguments(self, parser):
         # Add common args
         super(Command, self).add_arguments(parser)
 
@@ -66,7 +63,7 @@ class Command(GestoreCommand):
                  'not currently exist on the model',
         )
 
-    def handle(self, *args, **options) -> None:
+    def handle(self, *args, **options):
         """
         Verifies the input and extracts all objects.
         """
@@ -174,7 +171,7 @@ class Command(GestoreCommand):
                 writer=self.write
             )
 
-    def load_data(self, objects_data: dict) -> None:
+    def load_data(self, objects_data):
         """
         Searches for and loads the contents of the objects_data into the
         database.
@@ -182,8 +179,8 @@ class Command(GestoreCommand):
         and re-loaded into the database.
 
         Note: this means that if we change one of the rows created in the
-        database and then run load_data again, we’ll wipe out any changes
-        we’ve made.
+        database and then run load_data again, we will wipe out any changes
+        we have made.
         """
         models = set()
         connection = connections[self.using]
@@ -223,7 +220,7 @@ class Command(GestoreCommand):
                 % (self.loaded_object_count, self.export_object_count)
             )
 
-    def load_objects(self, objects_data: dict) -> None:
+    def load_objects(self, objects_data):
         """
         Iterates over the objects_data, deserializes them, and put them
         in the database one by one.
@@ -299,7 +296,7 @@ class Command(GestoreCommand):
         if self.export_object_count == 0:
             self.write_warning('No data found for provided export file')
 
-    def print_conflicts(self, conflicts: List[Tuple[PK, str]]) -> None:
+    def print_conflicts(self, conflicts):
         conflicts_message = ''.join([
             '\t- Object ID {} in model {}\n'.format(c, m)
             for c, m in conflicts
@@ -310,7 +307,7 @@ class Command(GestoreCommand):
             'objects:\n %s' % conflicts_message
         )
 
-    def raise_for_conflicts(self) -> None:
+    def raise_for_conflicts(self):
         self.write_warning('PLEASE READ:')
         self.write_warning(
             'Conflict detected between database and export data...'
@@ -336,7 +333,7 @@ class Command(GestoreCommand):
             'imported file'
         )
 
-    def print_to_save_objects(self) -> None:
+    def print_to_save_objects(self):
         if not self.debug:
             return
 

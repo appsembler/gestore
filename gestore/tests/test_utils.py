@@ -1,5 +1,6 @@
+from io import BytesIO as StringIO
+from mock import patch
 import pkg_resources
-from unittest.mock import call, patch
 
 from django.contrib.auth.models import User
 from django.test import TestCase
@@ -45,7 +46,7 @@ class TestUtils(TestCase):
         # Test wrong representation
         representation = 'auth.User'
         with self.assertRaisesMessage(
-                ValueError, 'not enough values to unpack'
+                ValueError, 'need more than 2 values to unpack'
         ):
             utils.get_obj_from_str(representation)
 
@@ -57,7 +58,7 @@ class TestUtils(TestCase):
 
 
 class TestGetStrFromModel(TestCase):
-    def setUp(self) -> None:
+    def setUp(self):
         self.obj = UserFactory()
 
     def test_no_object_id(self):
@@ -70,20 +71,20 @@ class TestGetStrFromModel(TestCase):
 
 
 class TestUtilsWritePackagesDiff(TestCase):
-    def setUp(self) -> None:
+    def setUp(self):
         self.local = {
             'a': '1.2.3',
             'b': '2.3.4',
             'c': '3.4.5',
         }
 
-    @patch('builtins.print')
+    @patch('sys.stdout', new_callable=StringIO)
     def test_packages_equal(self, mock_print):
         # Test local packages equals exported packages
-        utils.write_packages_diff(self.local, self.local, writer=print)
-        self.assertFalse(mock_print.mock_calls)
+        utils.write_packages_diff(self.local, self.local)
+        self.assertFalse(mock_print.getvalue())
 
-    @patch('builtins.print')
+    @patch('sys.stdout', new_callable=StringIO)
     def test_packages_not_in_local(self, mock_print):
         # Test package not in local packages but exists in exported packages
         exported = {
@@ -92,26 +93,26 @@ class TestUtilsWritePackagesDiff(TestCase):
             'c': '3.4.5',
             'd': '4.5.6',
         }
-        utils.write_packages_diff(self.local, exported, writer=print)
+        utils.write_packages_diff(self.local, exported)
         self.assertEqual(
-            mock_print.mock_calls,
-            [call('d==4.5.6 not found in your local env')]
+            mock_print.getvalue(),
+            'd==4.5.6 not found in your local env\n'
         )
 
-    @patch('builtins.print')
+    @patch('sys.stdout', new_callable=StringIO)
     def test_packages_not_in_exported(self, mock_print):
         # Test package exists in local packages but not in exported packages
         exported = {
             'b': '2.3.4',
             'c': '3.4.5',
         }
-        utils.write_packages_diff(self.local, exported, writer=print)
+        utils.write_packages_diff(self.local, exported)
         self.assertEqual(
-            mock_print.mock_calls,
-            [call('a==1.2.3 not found in your exported env')]
+            mock_print.getvalue(),
+            'a==1.2.3 not found in your exported env\n'
         )
 
-    @patch('builtins.print')
+    @patch('sys.stdout', new_callable=StringIO)
     def test_packages_mismatch(self, mock_print):
         # Test package exists in local packages but not in exported packages
         exported = {
@@ -119,13 +120,13 @@ class TestUtilsWritePackagesDiff(TestCase):
             'b': '2.3.4',
             'c': '5.6.7',
         }
-        utils.write_packages_diff(self.local, exported, writer=print)
+        utils.write_packages_diff(self.local, exported)
         self.assertEqual(
-            mock_print.mock_calls,
-            [call('c local version is 3.4.5 and exported version is 5.6.7')]
+            mock_print.getvalue(),
+            'c local version is 3.4.5 and exported version is 5.6.7\n'
         )
 
-    @patch('builtins.print')
+    @patch('sys.stdout', new_callable=StringIO)
     def test_packages_mess(self, mock_print):
         # Test package exists in local packages but not in exported packages
         exported = {
@@ -133,12 +134,11 @@ class TestUtilsWritePackagesDiff(TestCase):
             'b': '3.3.4',
             'd': '5.6.7',
         }
-        utils.write_packages_diff(self.local, exported, writer=print)
+        utils.write_packages_diff(self.local, exported)
+
         self.assertCountEqual(
-            mock_print.mock_calls,
-            [
-                call('d==5.6.7 not found in your local env'),
-                call('c==3.4.5 not found in your exported env'),
-                call('b local version is 2.3.4 and exported version is 3.3.4')
-            ]
+            mock_print.getvalue(),
+            'd==5.6.7 not found in your local env\n'
+            'c==3.4.5 not found in your exported env\n'
+            'b local version is 2.3.4 and exported version is 3.3.4\n'
         )

@@ -1,9 +1,10 @@
+import io
 import setuptools
 
 import gestore
 
 
-with open("README.md", "r", encoding="utf-8") as fh:
+with io.open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
 
@@ -35,7 +36,7 @@ setuptools.setup(
         "Framework :: Django :: 3.1",
         "Framework :: Django :: 3.2",
     ],
-    python_requires=">=3.5",
+    python_requires=">=2.7",
     packages=setuptools.find_packages(
         include=['gestore', 'gestore.*'],
         exclude=['gestore.tests'],

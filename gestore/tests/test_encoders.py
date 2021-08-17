@@ -8,7 +8,7 @@ from gestore.encoders import GestoreEncoder
 
 
 class TestGestoreEncoder(TestCase):
-    def setUp(self) -> None:
+    def setUp(self):
         self.encoder = GestoreEncoder()
 
     def test_super_class(self):
@@ -37,18 +37,18 @@ class TestGestoreEncoder(TestCase):
 
         # Monkey patching import
         try:
-            import builtins
-            realimport = builtins.__import__
+            import __builtin__
+            realimport = __builtin__.__import__
 
             def fakeimport(name, *args, **kw):
                 if name == 'django_countries':
                     raise ImportError
                 realimport(name, *args, **kw)
-            builtins.__import__ = fakeimport
+            __builtin__.__import__ = fakeimport
 
             with self.assertRaises(TypeError):
                 # This means our encoder hit the super method
                 self.encoder.default(field)
         finally:
             # Make sure this is set back to default no matter what happens
-            builtins.__import__ = realimport
+            __builtin__.__import__ = realimport

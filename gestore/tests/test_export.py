@@ -1,5 +1,5 @@
-from io import StringIO
-from unittest.mock import patch
+from io import BytesIO as StringIO
+from mock import patch
 
 import django
 from django.core.management import CommandError, call_command
@@ -43,7 +43,7 @@ class TestExportObjectsCommand(TestCase):
 
         if django.VERSION < (3, 2, 0):
             self.assertIn(
-                'Exporting ["%s"] in progress...' % objs, self.out.getvalue()
+                'Exporting [u"%s"] in progress...' % objs, self.out.getvalue()
             )
         else:
             self.assertIn(
@@ -73,7 +73,7 @@ class TestExportObjectsCommand(TestCase):
 
         if django.VERSION < (3, 2, 0):
             self.assertIn(
-                'Exporting ["%s"] in progress...' % objs, self.out.getvalue()
+                'Exporting [u"%s"] in progress...' % objs, self.out.getvalue()
             )
         else:
             self.assertIn(

@@ -1,7 +1,7 @@
 import json
-from io import StringIO
+from io import BytesIO as StringIO
 from socket import gaierror
-from unittest.mock import Mock, mock_open, patch
+from mock import Mock, mock_open, patch
 
 from django.conf import settings
 from django.core.management import CommandError
@@ -233,7 +233,7 @@ class TestGestoreCommandBucketExport(TestCase):
         content = '{"tetst": "contetnt"}'
 
         self.command.stdout = StringIO()
-        with patch('builtins.open', mock_open()) as mock_file:
+        with patch('__builtin__.open', mock_open()) as mock_file:
             self.command._write_to_file(path, content)
 
         mock_file.assert_called_once_with(path, 'w')
@@ -248,12 +248,12 @@ class TestGestoreCommandBucketExport(TestCase):
         self.command._write_to_file(path, content)
 
         mock_write_to_console.assert_called_once_with(content)
-        with patch('builtins.open', mock_open()) as mock_file:
+        with patch('__builtin__.open', mock_open()) as mock_file:
             mock_file.assert_not_called()
 
 
 class TestGestoreCommandBucketDownload(TestCase):
-    def setUp(self) -> None:
+    def setUp(self):
         self.command = GestoreCommand(stdout=StringIO())
 
     @patch.object(GestoreCommand, '_load_exports_file_from_local')
@@ -283,7 +283,7 @@ class TestGestoreCommandBucketDownload(TestCase):
             self.command._load_exports_file_from_local(path)
 
         with patch('os.path.exists', return_value=True):
-            with patch('builtins.open', mock_open(read_data=content)):
+            with patch('__builtin__.open', mock_open(read_data=content)):
                 data = self.command._load_exports_file_from_local(path)
 
         self.assertEqual(data, json.loads(content))

@@ -59,14 +59,11 @@ class LoanedBookInstancesByUserListViewTest(TestCase):
 
     def setUp(self):
         # Create two users
-        test_user1 = User.objects.create_user(
-            username='testuser1',
-            password='1X<ISRUkw+tuK'
-        )
-        test_user2 = User.objects.create_user(
-            username='testuser2',
-            password='2HJ1vRV0Z&3iD'
-        )
+        test_user1 = User.objects.create_user(username='testuser1')
+        test_user1.set_password('1X<ISRUkw+tuK')
+
+        test_user2 = User.objects.create_user(username='testuser2')
+        test_user2.set_password('2HJ1vRV0Z&3iD')
 
         test_user1.save()
         test_user2.save()
@@ -222,17 +219,14 @@ class RenewBookInstancesViewTest(TestCase):
 
     def setUp(self):
         # Create a user
-        test_user1 = User.objects.create_user(
-            username='testuser1',
-            password='1X<ISRUkw+tuK'
-        )
+        test_user1 = User.objects.create_user(username='testuser1')
+        test_user1.set_password('1X<ISRUkw+tuK')
         test_user1.save()
 
-        test_user2 = User.objects.create_user(
-            username='testuser2',
-            password='2HJ1vRV0Z&3iD'
-        )
+        test_user2 = User.objects.create_user(username='testuser2')
+        test_user2.set_password('2HJ1vRV0Z&3iD')
         test_user2.save()
+
         permission = Permission.objects.get(name='Set book as returned')
         test_user2.user_permissions.add(permission)
         test_user2.save()
@@ -372,14 +366,11 @@ class AuthorCreateViewTest(TestCase):
 
     def setUp(self):
         # Create a user
-        test_user1 = User.objects.create_user(
-            username='testuser1',
-            password='1X<ISRUkw+tuK'
-        )
-        test_user2 = User.objects.create_user(
-            username='testuser2',
-            password='2HJ1vRV0Z&3iD'
-        )
+        test_user1 = User.objects.create_user(username='testuser1')
+        test_user1.set_password('1X<ISRUkw+tuK')
+
+        test_user2 = User.objects.create_user(username='testuser2')
+        test_user2.set_password('2HJ1vRV0Z&3iD')
 
         test_user1.save()
         test_user2.save()
@@ -399,7 +390,7 @@ class AuthorCreateViewTest(TestCase):
     def test_forbidden_if_logged_in_but_not_correct_permission(self):
         self.client.login(username='testuser1', password='1X<ISRUkw+tuK')
         response = self.client.get(reverse('author-create'))
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.status_code, 302)
 
     def test_logged_in_with_permission(self):
         self.client.login(username='testuser2', password='2HJ1vRV0Z&3iD')
