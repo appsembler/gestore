@@ -66,3 +66,7 @@ def get_str_from_model(model: Model, object_id=None) -> str:
         model_path += '.%s' % object_id
 
     return model_path
+
+
+def instance_representation(instance):
+    return get_str_from_model(instance._meta.model, object_id=instance.pk)

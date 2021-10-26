@@ -107,36 +107,47 @@ class TestExportObjectsCommand(TestCase):
             with self.assertRaises(CommandError):
                 call_command('exportobjects', objs, stdout=self.out)
 
+    @patch('gestore.management.commands.exportobjects.instance_representation')
     @patch.object(Command, 'process_instance')
-    def test_generate_objects_bfs(self, mock_process_instance):
+    def test_generate_objects_dfs(self, mock_process_instance, mock_instance_rep):
         """
-        To be able to test BFS we need a graph structure, this mimics database
+        To be able to test DFS we need a graph structure, this mimics database
         relations to some extent.
         """
+        mock_instance_rep.side_effect = lambda x: x
         mock_process_instance.side_effect = self.fake_process_instance
         objects = self.command.generate_objects('microsite')
 
-        # Each assert is a level where its elements can be exchangeble.
-        self.assertEqual(objects[0], 'microsite')
-        self.assertEqual(objects[1], 'organization_1')
-        self.assertSetEqual(set(objects[2:5]), {'user_1', 'user_2', 'tier'})
-        self.assertSetEqual(set(objects[5:8]), {
-            'user_terms_conditions_1',
-            'auth_token_1',
-            'user_terms_conditions_2'
-        })
-        self.assertEqual(objects[8], 'auth_token_2')
-        self.assertSetEqual(set(objects[9:]), {'terms_1', 'terms_2'})
+        # The objects must be processed in the following order
+        self.assertListEqual(
+            objects,
+            [
+                'microsite',
+                'organization_1',
+                'tier',
+                'user_2',
+                'auth_token_2',
+                'user_1',
+                'user_terms_conditions_2',
+                'terms_2',
+                'user_terms_conditions_1',
+                'terms_1',
+                'auth_token_1'
+            ]
+        )
 
+    @patch('gestore.management.commands.exportobjects.instance_representation')
     @patch.object(Command, 'process_instance')
-    def test_generate_objects_integrity(self, mock_process_instance):
+    def test_generate_objects_integrity(self, mock_process_instance, mock_instance_rep):
         """
         makes sure that:
             - All required objects are processed.
             - Unrelated objects are not included.
             - No object appears more than once.
         """
+        mock_instance_rep.side_effect = lambda x: x
         mock_process_instance.side_effect = self.fake_process_instance
+
         objects = self.command.generate_objects('microsite')
 
         # Test duplicates
@@ -162,22 +173,65 @@ class TestExportObjectsCommand(TestCase):
         """
         Returns all this nodes relations; the ones that it points at, and the
         ones they point at it.
+
+                               microsite
+                                  |
+                                  v
+                            organization_1 <-- tier
+                                /     \
+                               /       \
+                              v         v
+           auth_token_1 --> user_1    user_2 <-- auth_token_2
+                             ^ ^
+                            /   \
+                           /     \
+        user_terms_conditions_1  user_terms_conditions_2
+                          |           |
+                          v           v
+                        terms_1     terms_2
+
+                           --> object_not_used_1
+                          /
+        should_not_appear_1
+                          \
+                           --> object_not_used_2
+
+        should_not_appear_2 --> object_not_used_3
         """
         graph = {
-            'microsite': ['organization_1', ],
-            'organization_1': ['user_1', 'user_2'],
-            'tier': ['organization_1', ],
+            'microsite': [
+                'organization_1',
+            ],
+            'organization_1': [
+                'user_1',
+                'user_2',
+            ],
+            'tier': [
+                'organization_1',
+            ],
             'user_1': [],
             'user_2': [],
-            'auth_token_1': ['user_1', ],
-            'auth_token_2': ['user_2', ],
-            'user_terms_conditions_1': ['user_1', 'terms_1', ],
-            'user_terms_conditions_2': ['user_1', 'terms_2', ],
+            'auth_token_1': [
+                'user_1',
+            ],
+            'auth_token_2': [
+                'user_2',
+            ],
+            'user_terms_conditions_1': [
+                'user_1',
+                'terms_1',
+            ],
+            'user_terms_conditions_2': [
+                'user_1',
+                'terms_2',
+            ],
             'should_not_appear_1': [
                 'object_not_used_1',
                 'object_not_used_2',
             ],
-            'should_not_appear_2': ['object_not_used_3', ]
+            'should_not_appear_2': [
+                'object_not_used_3',
+            ],
         }
 
         objects = graph.get(instance, [])
