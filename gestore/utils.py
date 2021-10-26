@@ -68,5 +68,9 @@ def get_str_from_model(model: Model, object_id=None) -> str:
     return model_path
 
 
+def get_model_name(instance):
+    return instance._meta.model.__name__
+
+
 def instance_representation(instance):
     return get_str_from_model(instance._meta.model, object_id=instance.pk)
