@@ -104,7 +104,7 @@ We use a BFS technique to scrape data element by element from the database until
 #### Command Usage
 
 ```shell
-python manage.py exportobjects [-d] [-o OUTPUT] objects
+python manage.py exportobjects [-d] [-o OUTPUT] [-r [ROOT ...]] objects
 ```
 `objects` is a list of objects to be exported. Each of these arguments must match the following syntax: `<app_id>.<Model>.<object_id>`
 
@@ -118,6 +118,7 @@ python manage.py exportobjects auth.User.10 demoapp.Book.4 -o /path/to/exp.json
 - `objects` The main argument of the `exportobjects`. Its representation is described above.
 - `--debug` flag is optional. Use it to prevent any file writing. It is helpful to see the JSON output of the data before writing it on your system.
 - `--output` is an optional argument that takes a path string of the location in which you want to store the data exports file.
+- `--root` is an optional argument you can use to skip processing certain models. Check the `generate_objects` for more info.
 - `--bucket` If provided, we will export the objects a GCP bucket in the path provided above (or the auto generated one). This needs settings configurations.
   
 

@@ -1,7 +1,6 @@
 from datetime import datetime
 
 import json
-from typing import List
 
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import ForeignKey, Model
@@ -9,7 +8,8 @@ from django.db.models import ForeignKey, Model
 from gestore import processors
 from gestore.encoders import GestoreEncoder
 from gestore.gestore_command import GestoreCommand
-from gestore.utils import get_obj_from_str, get_pip_packages
+from gestore.utils import get_model_name, get_obj_from_str, get_pip_packages, \
+    instance_representation
 
 
 class Command(GestoreCommand):
@@ -24,6 +24,12 @@ class Command(GestoreCommand):
             'objects',
             help='List of all objects to export',
             nargs='+',
+        )
+
+        parser.add_argument(
+            '-r', '--root',
+            help='List of all model\'s names to consider as root',
+            nargs='*',
         )
         parser.add_argument(
             '-o', '--output',
@@ -60,7 +66,9 @@ class Command(GestoreCommand):
             'ip_address': self.ip_address,
             'libraries': get_pip_packages(),
             'provided_objects': options['objects'],
-            'objects': self.generate_objects(*objects),
+            'objects': self.generate_objects(
+                *objects, root_models=options['root']
+            ),
         }
 
         output = json.dumps(
@@ -75,17 +83,25 @@ class Command(GestoreCommand):
 
         self.write_success('Objects successfully exported!')
 
-    def generate_objects(self, *args: List[Model]) -> list:
+    def generate_objects(self, *args: [Model], root_models=None) -> list:
         """
-        A Breadth First Search implementation to extract the given objects and
+        A Depth First Search implementation to extract the given objects and
         process their children.
         What we are looking to achieve here is simply: For each object; process
-        the it; and all objects related to it. This will give you all the data
+        it; and all objects related to it. This will give you all the data
         that object uses in order to operate properly when imported.
 
-        When processing an object, all discovered relations will be added
-        to the queue to take part in the processing later. Same goes for any
+        When processing an object, some discovered relations will be added
+        to the stack to take part in the processing later. Same goes for any
         discovered relation in that queue.
+
+        The relations that are not going to be processed are objects of what
+        we call Root Models. A root model is identified using two ways:
+            - Any object in the same model of the object you're trying to
+              export. For example; if you're exporting a user object from
+              model User, we are not going to process any other user in that
+              model except the given one.
+            - A set of models the user manually provides.
 
         To avoid infinite loops caused by processing the same element multiple
         times, we check the discovered space (processing and processed objects)
@@ -94,24 +110,47 @@ class Command(GestoreCommand):
         :return: Simply all discovered objects' data.
         """
         objects = []
-        processing_queue = list(args)
-        processed_objects = set()
+        visited = {}
 
-        while processing_queue:
-            instance = processing_queue.pop(0)
+        processing_stack = list(args)
+        in_processing_stack = {
+            instance_representation(instance): True
+            for instance in args
+        }
+
+        if not root_models:
+            root_models = set()
+
+        root_models = set(get_model_name(i) for i in args).union(root_models)
+
+        while processing_stack:
+            instance = processing_stack.pop()
+            instance_key = instance_representation(instance)
+
+            in_processing_stack[instance_key] = False
             item, pending_items = self.process_instance(instance)
 
             if item:
                 objects.append(item)
 
             for pending_item in pending_items:
-                is_processed = pending_item not in processed_objects
-                is_processing = pending_item not in processing_queue
-                should_process = bool(is_processed and is_processing)
-                if should_process:
-                    processing_queue.append(pending_item)
+                pending_item_key = instance_representation(pending_item)
 
-            processed_objects.add(instance)
+                is_root_object = get_model_name(pending_item) in root_models
+                is_processed = visited.get(pending_item_key, False)
+                is_processing = in_processing_stack.get(
+                    pending_item_key, False
+                )
+
+                # Equivalent to not is_processed and not is_...
+                should_process = not (
+                        is_processed or is_processing or is_root_object
+                )
+                if should_process:
+                    processing_stack.append(pending_item)
+                    in_processing_stack[pending_item_key] = True
+
+            visited[instance_key] = True
 
         self.write('\n')
         for error in self.errors:
@@ -119,7 +158,7 @@ class Command(GestoreCommand):
 
         self.write(
             'Total exported objects is %d (%d processed, %d errors)'
-            % (len(objects), len(processed_objects), len(self.errors))
+            % (len(objects), len(visited), len(self.errors))
         )
 
         return objects
